@@ -1,0 +1,150 @@
+"""
+Created on Wed Jul 19 18:22:44 2017
+
+@author: ilaria
+"""
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as ptc
+from matplotlib.path import Path
+from matplotlib import animation
+
+class Polygon(object):
+    
+    def __init__(self,vertices,xy,radius, color): #CONSTRUCTOR
+        
+        self.xy=xy
+        self.vertices=vertices
+        self.radius=radius
+        self.color=color
+        
+        self.visible=True
+        self.orientation=0
+        
+    def PlotDef(self): #define the plot
+        self.figure=ptc.RegularPolygon((self.xy),self.vertices,
+                           self.radius, facecolor = self.color,
+                           orientation = self.orientation)
+          
+    def PlotAdd(self): #add plot to figure
+        self.xLim=(0,10)      
+        self.yLim=(0,10)
+        self.fig=plt.figure(1) 
+        self.ax1 = self.fig.add_subplot(111,aspect='equal')       
+        self.ax1.set_xlim((self.xLim))
+        self.ax1.set_ylim((self.yLim))
+        
+        self.ax1.add_patch(self.figure)
+        
+    def RandPos(self,randPos): #random position in x/y limits
+        self.randPos=[randPos]
+        randomX=np.random.uniform(0,10)
+        randomY=np.random.uniform(0,10)
+        randomXY=np.array([randomX,randomY])
+        randPos.append(randomXY)
+        
+    def CheckDesk(self, deskLim, figXY, check): #check in/out of desk
+        self.deskLim=deskLim
+        self.figXY= figXY
+        self.check=[check] 
+        
+        checkX=deskLim[0,0] < figXY[0][0] < deskLim[1,0]
+        checkY=deskLim[0,1] < figXY[0][1] < deskLim[1,1]
+
+        check.append((checkX,checkY))
+
+
+class Circle(Polygon):
+    
+    def __init__(self,xy,radius, color):
+        self.xy=xy
+        self.radius=radius
+        self.color=color
+        
+        self.visible=True
+
+    def PlotDef(self):
+        self.figure=ptc.Circle((self.xy),self.radius, 
+                            facecolor = self.color, visible = self.visible)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%____DATA___INITIALIZATION
+#DESK
+deskNumVer=int(4)
+deskCoor=np.array([5,5])
+deskRad=float(5.5)
+#coordinates tolerance (add function?)
+deskSide=deskRad*np.sqrt(2) #side lenght
+deskDistSide=deskSide/2 #distance center/side
+deskMinXY=deskCoor-deskDistSide
+deskMaxXY=deskCoor+deskDistSide
+deskTol=np.matrix([deskMinXY,deskMaxXY]) #desk tolerance
+
+deskCol="none"
+deskOrie=0.785
+checkDesk=[]
+
+objDesk=Polygon(deskNumVer,deskCoor,deskRad,deskCol)
+objDesk.orientation=deskOrie
+
+#TRIANGLE
+triNumVer=int(3)
+ini_triCoor=np.array([2.5,7])
+triRad=float(0.8)
+triCol="green"
+triBary=[]
+
+objTri=Polygon(triNumVer,ini_triCoor,triRad,triCol)
+
+#HAND
+ini_handCoor=np.array([5,1.2])
+handRad=0.1
+handCol="y"
+handPosList=[]
+actHandPos=[]
+
+objHand=Circle(ini_handCoor,handRad,handCol)
+
+#TRIALS
+fig=plt.figure(1)
+numTri=-1
+maxTri=5
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%___INITIALIZATION
+def initDesk():
+    objDesk.PlotDef()
+    objDesk.PlotAdd()
+       
+    objTri.PlotDef()
+    objTri.PlotAdd()
+    
+    objHand.PlotDef()
+    objHand.PlotAdd()
+
+initDesk()
+
+def animate(position):   
+    objHand=Circle(position,handRad,handCol)
+    #objHand.visible=False
+    objHand.PlotDef()
+    objHand.PlotAdd()
+    
+while numTri < maxTri-1:
+    numTri+=1
+    checkDesk=[]
+    
+    objHand.RandPos(handPosList) #calculate random hand position
+    actHandPos=[handPosList[numTri]] #actual hand position
+    objHand.CheckDesk(deskTol, actHandPos, checkDesk) #check if actPos in inside desk
+   
+    #CHECK if hand is in/out of the desk
+    if (checkDesk[0][0] and checkDesk[0][1]) != True:  
+        print "Hand is out of the desk, with coordinates: ",actHandPos
+        #numTri-=1
+        continue
+    else:
+        pass
+        
+    
+anim = animation.FuncAnimation(fig, animate, frames=handPosList, init_func=initDesk,
+                               repeat=False, interval=200)
